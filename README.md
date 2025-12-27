@@ -1,4 +1,6 @@
-# FastMCP SQL Server
+# FastMCP SQL Tools
+
+mcp-name: io.github.atarkowska/fastmcp-sqltools
 
 A Model Context Protocol (MCP) server built with FastMCP that provides universal SQL database access with support for PostgreSQL, MySQL, SQLite, and more.
 
