@@ -138,6 +138,19 @@ async def execute_safe_query(query: str, params: list[Any] | None = None) -> lis
             return [dict(row) for row in rows]
 
 
+def main():
+    """
+    Start the MCP server.
+    """
+    logger.info("Starting SQL MCP Server...")
+    logger.info("Available tools:")
+    logger.info(" - list_tables: List all tables in the specified schema")
+    logger.info(" - get_table_schema: Get the schema (column definitions) for a specific table")
+    logger.info(" - execute_query: Execute a SQL query and return results")
+    logger.info(" - execute_safe_query: Execute a read-only SQL query (SELECT only)")
+    mcp.run()
+
+
 if __name__ == "__main__":
     # Run the server
     mcp.run()
