@@ -8,6 +8,7 @@ import logging
 import os
 from typing import Any, Protocol
 from abc import ABC, abstractmethod
+from urllib.parse import urlparse
 from fastmcp import FastMCP
 
 
@@ -23,55 +24,53 @@ class DatabaseConnection(Protocol):
     """Protocol for database connection"""
     async def fetch(self, query: str, *args) -> list[Any]:
         """Fetch query results"""
-        ...
-    
+
     async def execute(self, query: str, *args) -> Any:
         """Execute a query"""
-        ...
 
 
 class DatabaseAdapter(ABC):
     """Abstract base class for database adapters"""
-    
+
     @abstractmethod
     async def get_connection(self) -> Any:
         """Get a database connection"""
-        ...
-    
+
     @abstractmethod
-    async def fetch(self, query: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
+    async def fetch(
+        self, query: str, params: list[Any] | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch query results"""
-        ...
-    
+
     @abstractmethod
     async def execute(self, query: str, params: list[Any] | None = None) -> Any:
         """Execute a query"""
-        ...
-    
+
     @abstractmethod
     async def close(self) -> None:
         """Close the database connection"""
-        ...
-    
+
     @abstractmethod
-    def get_list_tables_query(self, schema: str | None = None) -> tuple[str, list[Any]]:
+    def get_list_tables_query(
+        self, schema: str | None = None
+    ) -> tuple[str, list[Any]]:
         """Get query to list tables"""
-        ...
-    
+
     @abstractmethod
-    def get_table_schema_query(self, table_name: str, schema: str | None = None) -> tuple[str, list[Any]]:
+    def get_table_schema_query(
+        self, table_name: str, schema: str | None = None
+    ) -> tuple[str, list[Any]]:
         """Get query to retrieve table schema"""
-        ...
 
 
 class PostgresAdapter(DatabaseAdapter):
     """PostgreSQL database adapter using asyncpg"""
-    
+
     def __init__(self):
-        import asyncpg
+        import asyncpg  # pylint: disable=import-outside-toplevel
         self.asyncpg = asyncpg
         self.pool: asyncpg.Pool | None = None
-    
+
     async def get_connection(self) -> Any:
         """Get or create PostgreSQL connection pool"""
         if self.pool is None:
@@ -81,7 +80,7 @@ class PostgresAdapter(DatabaseAdapter):
             self.pool = await self.asyncpg.create_pool(database_url)
             logger.info("PostgreSQL connection pool created successfully")
         return self.pool
-    
+
     async def fetch(self, query: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         """Fetch query results from PostgreSQL"""
         pool = await self.get_connection()
@@ -91,27 +90,26 @@ class PostgresAdapter(DatabaseAdapter):
             else:
                 rows = await conn.fetch(query)
             return [dict(row) for row in rows]
-    
+
     async def execute(self, query: str, params: list[Any] | None = None) -> Any:
         """Execute a query on PostgreSQL"""
         pool = await self.get_connection()
         async with pool.acquire() as conn:
             if params:
                 return await conn.execute(query, *params)
-            else:
-                return await conn.execute(query)
-    
+            return await conn.execute(query)
+
     async def close(self) -> None:
         """Close PostgreSQL connection pool"""
         if self.pool:
             await self.pool.close()
             self.pool = None
-    
+
     def get_list_tables_query(self, schema: str | None = None) -> tuple[str, list[Any]]:
         """Get query to list tables in PostgreSQL"""
         schema = schema or "public"
         query = """
-            SELECT 
+            SELECT
                 table_name,
                 table_type
             FROM information_schema.tables
@@ -119,12 +117,14 @@ class PostgresAdapter(DatabaseAdapter):
             ORDER BY table_name
         """
         return query, [schema]
-    
-    def get_table_schema_query(self, table_name: str, schema: str | None = None) -> tuple[str, list[Any]]:
+
+    def get_table_schema_query(
+        self, table_name: str, schema: str | None = None
+    ) -> tuple[str, list[Any]]:
         """Get query to retrieve table schema in PostgreSQL"""
         schema = schema or "public"
         query = """
-            SELECT 
+            SELECT
                 column_name,
                 data_type,
                 character_maximum_length,
@@ -139,23 +139,22 @@ class PostgresAdapter(DatabaseAdapter):
 
 class MySQLAdapter(DatabaseAdapter):
     """MySQL database adapter using aiomysql"""
-    
+
     def __init__(self):
-        import aiomysql
+        import aiomysql  # pylint: disable=import-outside-toplevel
         self.aiomysql = aiomysql
         self.pool: aiomysql.Pool | None = None
-    
+
     async def get_connection(self) -> Any:
         """Get or create MySQL connection pool"""
         if self.pool is None:
             database_url = os.getenv("DATABASE_URL")
             if not database_url:
                 raise ValueError("DATABASE_URL environment variable is required")
-            
+
             # Parse MySQL URL (mysql://user:password@host:port/database)
-            from urllib.parse import urlparse
             parsed = urlparse(database_url)
-            
+
             self.pool = await self.aiomysql.create_pool(
                 host=parsed.hostname or 'localhost',
                 port=parsed.port or 3306,
@@ -166,7 +165,7 @@ class MySQLAdapter(DatabaseAdapter):
             )
             logger.info("MySQL connection pool created successfully")
         return self.pool
-    
+
     async def fetch(self, query: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         """Fetch query results from MySQL"""
         pool = await self.get_connection()
@@ -175,7 +174,7 @@ class MySQLAdapter(DatabaseAdapter):
                 await cursor.execute(query, params or ())
                 rows = await cursor.fetchall()
                 return list(rows)
-    
+
     async def execute(self, query: str, params: list[Any] | None = None) -> Any:
         """Execute a query on MySQL"""
         pool = await self.get_connection()
@@ -184,19 +183,19 @@ class MySQLAdapter(DatabaseAdapter):
                 result = await cursor.execute(query, params or ())
                 await conn.commit()
                 return result
-    
+
     async def close(self) -> None:
         """Close MySQL connection pool"""
         if self.pool:
             self.pool.close()
             await self.pool.wait_closed()
             self.pool = None
-    
+
     def get_list_tables_query(self, schema: str | None = None) -> tuple[str, list[Any]]:
         """Get query to list tables in MySQL"""
         if schema:
             query = """
-                SELECT 
+                SELECT
                     table_name,
                     table_type
                 FROM information_schema.tables
@@ -204,22 +203,23 @@ class MySQLAdapter(DatabaseAdapter):
                 ORDER BY table_name
             """
             return query, [schema]
-        else:
-            query = """
-                SELECT 
-                    table_name,
-                    table_type
-                FROM information_schema.tables
-                WHERE table_schema = DATABASE()
-                ORDER BY table_name
-            """
-            return query, []
-    
-    def get_table_schema_query(self, table_name: str, schema: str | None = None) -> tuple[str, list[Any]]:
+        query = """
+            SELECT
+                table_name,
+                table_type
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ORDER BY table_name
+        """
+        return query, []
+
+    def get_table_schema_query(
+        self, table_name: str, schema: str | None = None
+    ) -> tuple[str, list[Any]]:
         """Get query to retrieve table schema in MySQL"""
         if schema:
             query = """
-                SELECT 
+                SELECT
                     column_name,
                     data_type,
                     character_maximum_length,
@@ -230,67 +230,66 @@ class MySQLAdapter(DatabaseAdapter):
                 ORDER BY ordinal_position
             """
             return query, [schema, table_name]
-        else:
-            query = """
-                SELECT 
-                    column_name,
-                    data_type,
-                    character_maximum_length,
-                    is_nullable,
-                    column_default
-                FROM information_schema.columns
-                WHERE table_schema = DATABASE() AND table_name = %s
-                ORDER BY ordinal_position
-            """
-            return query, [table_name]
+        query = """
+            SELECT
+                column_name,
+                data_type,
+                character_maximum_length,
+                is_nullable,
+                column_default
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name = %s
+            ORDER BY ordinal_position
+        """
+        return query, [table_name]
 
 
 class SQLiteAdapter(DatabaseAdapter):
     """SQLite database adapter using aiosqlite"""
-    
+
     def __init__(self):
-        import aiosqlite
+        import aiosqlite  # pylint: disable=import-outside-toplevel
         self.aiosqlite = aiosqlite
         self.connection: aiosqlite.Connection | None = None
-    
+
     async def get_connection(self) -> Any:
         """Get or create SQLite connection"""
         if self.connection is None:
             database_url = os.getenv("DATABASE_URL")
             if not database_url:
                 raise ValueError("DATABASE_URL environment variable is required")
-            
+
             # Parse SQLite URL (sqlite:///path/to/db.sqlite or sqlite://path/to/db.sqlite)
             db_path = database_url.replace("sqlite:///", "").replace("sqlite://", "")
             self.connection = await self.aiosqlite.connect(db_path)
             self.connection.row_factory = self.aiosqlite.Row
             logger.info("SQLite connection created successfully")
         return self.connection
-    
+
     async def fetch(self, query: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         """Fetch query results from SQLite"""
         conn = await self.get_connection()
         async with conn.execute(query, params or ()) as cursor:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
-    
+
     async def execute(self, query: str, params: list[Any] | None = None) -> Any:
         """Execute a query on SQLite"""
         conn = await self.get_connection()
         cursor = await conn.execute(query, params or ())
         await conn.commit()
         return cursor
-    
+
     async def close(self) -> None:
         """Close SQLite connection"""
         if self.connection:
             await self.connection.close()
             self.connection = None
-    
+
     def get_list_tables_query(self, schema: str | None = None) -> tuple[str, list[Any]]:
         """Get query to list tables in SQLite"""
         query = """
-            SELECT 
+            SELECT
                 name as table_name,
                 type as table_type
             FROM sqlite_master
@@ -298,8 +297,10 @@ class SQLiteAdapter(DatabaseAdapter):
             ORDER BY name
         """
         return query, []
-    
-    def get_table_schema_query(self, table_name: str, schema: str | None = None) -> tuple[str, list[Any]]:
+
+    def get_table_schema_query(
+        self, table_name: str, schema: str | None = None
+    ) -> tuple[str, list[Any]]:
         """Get query to retrieve table schema in SQLite"""
         # SQLite uses PRAGMA table_info, but we'll convert it to a similar format
         query = f"PRAGMA table_info({table_name})"
@@ -313,11 +314,14 @@ _db_adapter: DatabaseAdapter | None = None  # pylint: disable=invalid-name
 def get_db_adapter() -> DatabaseAdapter:
     """Get or create database adapter based on DATABASE_URL"""
     global _db_adapter  # pylint: disable=global-statement
-    
+
     if _db_adapter is None:
         database_url = os.getenv("DATABASE_URL", "")
-        
-        if database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
+
+        if (
+            database_url.startswith("postgresql://")
+            or database_url.startswith("postgres://")
+        ):
             logger.info("Initializing PostgreSQL adapter")
             _db_adapter = PostgresAdapter()
         elif database_url.startswith("mysql://"):
@@ -328,9 +332,10 @@ def get_db_adapter() -> DatabaseAdapter:
             _db_adapter = SQLiteAdapter()
         else:
             raise ValueError(
-                "Unsupported database URL. Must start with postgresql://, mysql://, or sqlite://"
+                "Unsupported database URL. Must start with "
+                "postgresql://, mysql://, or sqlite://"
             )
-    
+
     return _db_adapter
 
 
@@ -350,11 +355,17 @@ async def list_tables(schema: str | None = None) -> list[dict[str, Any]]:
         db = get_db_adapter()
         query, params = db.get_list_tables_query(schema)
         result = await db.fetch(query, params)
-        
+
         # For SQLite, normalize the column names
         if isinstance(db, SQLiteAdapter):
-            result = [{"table_name": row.get("table_name"), "table_type": row.get("table_type")} for row in result]
-        
+            result = [
+                {
+                    "table_name": row.get("table_name"),
+                    "table_type": row.get("table_type")
+                }
+                for row in result
+            ]
+
         logger.info("Found %d tables", len(result))
         return result
     except Exception as e:
@@ -379,7 +390,7 @@ async def get_table_schema(table_name: str, schema: str | None = None) -> list[d
         db = get_db_adapter()
         query, params = db.get_table_schema_query(table_name, schema)
         result = await db.fetch(query, params)
-        
+
         # For SQLite, convert PRAGMA table_info output to standard format
         if isinstance(db, SQLiteAdapter):
             result = [
@@ -388,11 +399,11 @@ async def get_table_schema(table_name: str, schema: str | None = None) -> list[d
                     "data_type": row.get("type"),
                     "character_maximum_length": None,
                     "is_nullable": "YES" if not row.get("notnull") else "NO",
-                    "column_default": row.get("dflt_value")
+                    "column_default": row.get("dflt_value"),
                 }
                 for row in result
             ]
-        
+
         logger.info("Found %d columns for table '%s'", len(result), table_name)
         return result
     except Exception as e:
