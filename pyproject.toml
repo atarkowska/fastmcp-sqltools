@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastmcp-sqltools"
-version = "0.2.1"
+version = "0.3.0"
 description = "FastMCP SQL server with support for PostgreSQL, MySQL, and SQLite"
 authors = [
   { name = "Ola Tarkowska", email = "ola@entrypoint.tech" }
