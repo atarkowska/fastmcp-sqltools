@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock, patch
 
 from src.fastmcp_sqltools.server import (
-    get_db_adapter,
+    db_manager,
     PostgresAdapter,
     MySQLAdapter,
     SQLiteAdapter,
@@ -17,17 +17,17 @@ class TestAdapterFactory:
 
     def test_creates_postgres_adapter(self, mock_postgres_url):
         """Test PostgreSQL adapter is created for postgresql:// URL"""
-        adapter = get_db_adapter()
+        adapter = db_manager.get_adapter()
         assert isinstance(adapter, PostgresAdapter)
 
     def test_creates_mysql_adapter(self, mock_mysql_url):
         """Test MySQL adapter is created for mysql:// URL"""
-        adapter = get_db_adapter()
+        adapter = db_manager.get_adapter()
         assert isinstance(adapter, MySQLAdapter)
 
     def test_creates_sqlite_adapter(self, mock_sqlite_url):
         """Test SQLite adapter is created for sqlite:// URL"""
-        adapter = get_db_adapter()
+        adapter = db_manager.get_adapter()
         assert isinstance(adapter, SQLiteAdapter)
 
 
@@ -107,7 +107,7 @@ class TestListTables:
                 {"table_name": "posts", "table_type": "BASE TABLE"}
             ])
             
-            with patch('src.fastmcp_sqltools.server.get_db_adapter', return_value=mock_adapter):
+            with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
                 result = await list_tables.fn()
                 
                 assert len(result) == 2
@@ -136,7 +136,7 @@ class TestGetTableSchema:
                 }
             ])
             
-            with patch('src.fastmcp_sqltools.server.get_db_adapter', return_value=mock_adapter):
+            with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
                 result = await get_table_schema.fn("users")
                 
                 assert len(result) == 1
@@ -155,7 +155,7 @@ class TestExecuteQuery:
             mock_adapter = MockAdapter.return_value
             mock_adapter.fetch = AsyncMock(return_value=[{"count": 5}])
             
-            with patch('src.fastmcp_sqltools.server.get_db_adapter', return_value=mock_adapter):
+            with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
                 result = await execute_query.fn("SELECT COUNT(*) as count FROM users")
                 
                 assert len(result) == 1
@@ -170,7 +170,7 @@ class TestExecuteQuery:
             mock_adapter = MockAdapter.return_value
             mock_adapter.fetch = AsyncMock(return_value=[])
             
-            with patch('src.fastmcp_sqltools.server.get_db_adapter', return_value=mock_adapter):
+            with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
                 result = await execute_query.fn("SELECT * FROM users WHERE id = $1", params=[1])
                 
                 assert result == []
@@ -189,7 +189,7 @@ class TestExecuteSafeQuery:
             mock_adapter = MockAdapter.return_value
             mock_adapter.fetch = AsyncMock(return_value=[])
             
-            with patch('src.fastmcp_sqltools.server.get_db_adapter', return_value=mock_adapter):
+            with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
                 result = await execute_safe_query.fn("SELECT * FROM users")
                 assert result == []
 

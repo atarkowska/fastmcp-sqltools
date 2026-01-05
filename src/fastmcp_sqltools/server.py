@@ -307,36 +307,46 @@ class SQLiteAdapter(DatabaseAdapter):
         return query, []
 
 
-# Global database adapter instance
-_db_adapter: DatabaseAdapter | None = None  # pylint: disable=invalid-name
+class DatabaseManager:
+    """Manages database adapter lifecycle"""
+
+    def __init__(self):
+        self._adapter:  DatabaseAdapter | None = None
+
+    def get_adapter(self) -> DatabaseAdapter:
+        """Get or create database adapter based on DATABASE_URL"""
+        if self._adapter is None:
+            database_url = os.getenv("DATABASE_URL", "")
+
+            if (
+                database_url.startswith("postgresql://")
+                or database_url.startswith("postgres://")
+            ):
+                logger.info("Initializing PostgreSQL adapter")
+                self._adapter = PostgresAdapter()
+            elif database_url.startswith("mysql://"):
+                logger.info("Initializing MySQL adapter")
+                self._adapter = MySQLAdapter()
+            elif database_url.startswith("sqlite://"):
+                logger.info("Initializing SQLite adapter")
+                self._adapter = SQLiteAdapter()
+            else:
+                raise ValueError(
+                    "Unsupported database URL.  Must start with "
+                    "postgresql://, mysql://, or sqlite://"
+                )
+
+        return self._adapter
+
+    async def close(self):
+        """Close database connection"""
+        if self._adapter:
+            await self._adapter.close()
+            self._adapter = None
 
 
-def get_db_adapter() -> DatabaseAdapter:
-    """Get or create database adapter based on DATABASE_URL"""
-    global _db_adapter  # pylint: disable=global-statement
-
-    if _db_adapter is None:
-        database_url = os.getenv("DATABASE_URL", "")
-
-        if (
-            database_url.startswith("postgresql://")
-            or database_url.startswith("postgres://")
-        ):
-            logger.info("Initializing PostgreSQL adapter")
-            _db_adapter = PostgresAdapter()
-        elif database_url.startswith("mysql://"):
-            logger.info("Initializing MySQL adapter")
-            _db_adapter = MySQLAdapter()
-        elif database_url.startswith("sqlite://"):
-            logger.info("Initializing SQLite adapter")
-            _db_adapter = SQLiteAdapter()
-        else:
-            raise ValueError(
-                "Unsupported database URL. Must start with "
-                "postgresql://, mysql://, or sqlite://"
-            )
-
-    return _db_adapter
+# Create database manager instance
+db_manager = DatabaseManager()
 
 
 @mcp.tool()
@@ -352,7 +362,7 @@ async def list_tables(schema: str | None = None) -> list[dict[str, Any]]:
     """
     logger.info("Listing tables in schema: %s", schema or "default")
     try:
-        db = get_db_adapter()
+        db = db_manager.get_adapter()
         query, params = db.get_list_tables_query(schema)
         result = await db.fetch(query, params)
 
@@ -387,7 +397,7 @@ async def get_table_schema(table_name: str, schema: str | None = None) -> list[d
     """
     logger.info("Getting schema for table: %s", table_name)
     try:
-        db = get_db_adapter()
+        db = db_manager.get_adapter()
         query, params = db.get_table_schema_query(table_name, schema)
         result = await db.fetch(query, params)
 
@@ -428,7 +438,7 @@ async def execute_query(query: str, params: list[Any] | None = None) -> list[dic
     if params:
         logger.debug("Query parameters: %s", params)
     try:
-        db = get_db_adapter()
+        db = db_manager.get_adapter()
         result = await db.fetch(query, params)
         logger.info("Query returned %d rows", len(result))
         return result
@@ -468,7 +478,7 @@ async def execute_safe_query(query: str, params: list[Any] | None = None) -> lis
             raise ValueError(f"Query contains disallowed keyword: {keyword}")
 
     try:
-        db = get_db_adapter()
+        db = db_manager.get_adapter()
         result = await db.fetch(query, params)
         logger.info("Safe query returned %d rows", len(result))
         return result

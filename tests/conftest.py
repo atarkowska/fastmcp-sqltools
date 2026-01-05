@@ -44,7 +44,7 @@ def mock_sqlite_url():
 @pytest.fixture(autouse=True)
 def reset_adapter():
     """Reset the global database adapter before each test"""
-    import src.fastmcp_sqltools.server as server
-    server._db_adapter = None
+    from src.fastmcp_sqltools.server import db_manager
+    db_manager._adapter = None
     yield
-    server._db_adapter = None
+    db_manager._adapter = None
