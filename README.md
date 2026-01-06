@@ -48,7 +48,7 @@ The `DATABASE_URL` should be in one of the following formats:
 - **PostgreSQL**: `postgresql://user:password@host:port/database` or `postgres://user:password@host:port/database`
 - **MySQL**: `mysql://user:password@host:port/database`
 - **SQLite**: `sqlite:///path/to/database.db` (use three slashes for absolute path)
-```
+
 
 ## License
 
