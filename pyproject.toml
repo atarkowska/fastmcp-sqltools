@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastmcp-sqltools"
-version = "0.4.2"
+version = "0.4.3"
 description = "FastMCP SQL server with support for PostgreSQL, MySQL, and SQLite"
 authors = [
   { name = "Ola Tarkowska", email = "ola@entrypoint.tech" }
@@ -12,7 +12,8 @@ authors = [
 readme = "README.md"
 classifiers = [
     "Intended Audience :: Developers",
-    "Intended Audience :: Data Analysts",
+		"Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
