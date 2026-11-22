@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastmcp-sqltools"
-version = "0.4.0"
+version = "0.4.1"
 description = "FastMCP SQL server with support for PostgreSQL, MySQL, and SQLite"
 authors = [
   { name = "Ola Tarkowska", email = "ola@entrypoint.tech" }
@@ -56,3 +56,12 @@ fastmcp-sqltools = "fastmcp_sqltools.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fastmcp_sqltools"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  ".DS_Store",
+  ".pre-commit-config.yaml",
+  "justfile",
+  ".github",
+  ".gitignore",
+]
