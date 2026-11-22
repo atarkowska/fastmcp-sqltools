@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastmcp-sqltools"
-version = "0.3.0"
+version = "0.4.0"
 description = "FastMCP SQL server with support for PostgreSQL, MySQL, and SQLite"
 authors = [
   { name = "Ola Tarkowska", email = "ola@entrypoint.tech" }
@@ -13,24 +13,27 @@ readme = "README.md"
 classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "fastmcp",
     "asyncpg",
     "aiomysql",
     "aiosqlite",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=6.1.1",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.1.0",
-    "reportlab>=4.0.0",
+    "pytest>=8.3.3",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=6.1.1"
 ]
 
 [project.scripts]

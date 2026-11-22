@@ -108,7 +108,7 @@ class TestListTables:
             ])
             
             with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
-                result = await list_tables.fn()
+                result = await list_tables()
                 
                 assert len(result) == 2
                 assert result[0]["table_name"] == "users"
@@ -137,7 +137,7 @@ class TestGetTableSchema:
             ])
             
             with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
-                result = await get_table_schema.fn("users")
+                result = await get_table_schema("users")
                 
                 assert len(result) == 1
                 assert result[0]["column_name"] == "id"
@@ -156,7 +156,7 @@ class TestExecuteQuery:
             mock_adapter.fetch = AsyncMock(return_value=[{"count": 5}])
             
             with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
-                result = await execute_query.fn("SELECT COUNT(*) as count FROM users")
+                result = await execute_query("SELECT COUNT(*) as count FROM users")
                 
                 assert len(result) == 1
                 assert result[0]["count"] == 5
@@ -171,7 +171,7 @@ class TestExecuteQuery:
             mock_adapter.fetch = AsyncMock(return_value=[])
             
             with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
-                result = await execute_query.fn("SELECT * FROM users WHERE id = $1", params=[1])
+                result = await execute_query("SELECT * FROM users WHERE id = $1", params=[1])
                 
                 assert result == []
                 mock_adapter.fetch.assert_called_once_with("SELECT * FROM users WHERE id = $1", [1])
@@ -190,7 +190,7 @@ class TestExecuteSafeQuery:
             mock_adapter.fetch = AsyncMock(return_value=[])
             
             with patch('src.fastmcp_sqltools.server.db_manager.get_adapter', return_value=mock_adapter):
-                result = await execute_safe_query.fn("SELECT * FROM users")
+                result = await execute_safe_query("SELECT * FROM users")
                 assert result == []
 
     @pytest.mark.asyncio
@@ -199,7 +199,7 @@ class TestExecuteSafeQuery:
         from src.fastmcp_sqltools.server import execute_safe_query
         
         with pytest.raises(ValueError, match="Only SELECT queries are allowed"):
-            await execute_safe_query.fn("INSERT INTO users VALUES (1, 'test')")
+            await execute_safe_query("INSERT INTO users VALUES (1, 'test')")
 
     @pytest.mark.asyncio
     async def test_rejects_update(self):
@@ -207,7 +207,7 @@ class TestExecuteSafeQuery:
         from src.fastmcp_sqltools.server import execute_safe_query
         
         with pytest.raises(ValueError, match="Only SELECT queries are allowed"):
-            await execute_safe_query.fn("UPDATE users SET name = 'test'")
+            await execute_safe_query("UPDATE users SET name = 'test'")
 
     @pytest.mark.asyncio
     async def test_rejects_delete(self):
@@ -215,7 +215,7 @@ class TestExecuteSafeQuery:
         from src.fastmcp_sqltools.server import execute_safe_query
         
         with pytest.raises(ValueError, match="Only SELECT queries are allowed"):
-            await execute_safe_query.fn("DELETE FROM users")
+            await execute_safe_query("DELETE FROM users")
 
     @pytest.mark.asyncio
     async def test_rejects_drop(self):
@@ -223,4 +223,4 @@ class TestExecuteSafeQuery:
         from src.fastmcp_sqltools.server import execute_safe_query
         
         with pytest.raises(ValueError, match="disallowed keyword: DROP"):
-            await execute_safe_query.fn("SELECT * FROM users; DROP TABLE users")
+            await execute_safe_query("SELECT * FROM users; DROP TABLE users")

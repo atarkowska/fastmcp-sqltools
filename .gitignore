@@ -19,6 +19,7 @@ coverage.xml
 # Virtual environments
 .venv
 venv/
+uv.lock
 
 # System files
 .DS_Store
