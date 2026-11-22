@@ -21,9 +21,9 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "fastmcp",
-    "asyncpg",
-    "aiomysql",
+    "fastmcp>=3.2.0",
+    "asyncpg>=0.21.0",
+    "aiomysql>=0.3.0",
     "aiosqlite",
 ]
 
