@@ -25,15 +25,30 @@ dependencies = [
     "asyncpg",
     "aiomysql",
     "aiosqlite",
-    "pytest-asyncio>=1.2.0",
-    "pytest-cov>=6.1.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.3",
     "pytest-asyncio>=1.2.0",
-    "pytest-cov>=6.1.1"
+    "pytest-cov>=6.1.1",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=6.1.1",
+    "twine>=7.0.0",
+    "ruff>=0.17.6",
+    "ty>=0.0.107",
+    "mypy>=2.4.1",
+]
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle
+  "F",  # Pyflakes
+  "B",  # flake8-bugbear
+  "I",  # isort
 ]
 
 [project.scripts]
